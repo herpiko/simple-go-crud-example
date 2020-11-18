@@ -32,7 +32,7 @@ type App struct {
 }
 
 type User struct {
-	ID       int
+	ID       string
 	Username string
 	Password string
 	Email    string
@@ -56,6 +56,36 @@ func (app *App) sayHello(name string) (string, error) {
 	}
 	result := "Hello, " + name + " " + app.Value
 	return result, nil
+}
+
+func (app *App) createUser(w http.ResponseWriter, req *http.Request) {
+
+	var user User
+	err := json.NewDecoder(req.Body).Decode(&user)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal-server-error"))
+		return
+	}
+	//	"INSERT INTO users" + x
+	_, err = app.Db.Exec(`
+	  INSERT INTO users 
+	  (username, email, password)
+	  VALUES ($1, $2, $3)
+	`,
+		user.Username,
+		user.Email,
+		user.Password,
+	)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal-server-error"))
+		return
+	}
+	w.Write([]byte("success"))
+	return
 }
 
 func (app *App) getUsers(w http.ResponseWriter, req *http.Request) {
